@@ -1,17 +1,81 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import getUserRecord from '@/app/actions/GetUserRecord';
 import getBestWorstExpense from '@/app/actions/GetBestWorstExpense';
 
-const ExpenseStats = async () => {
-  try {
-    // Fetch both average and range data
-    const [userRecordResult, rangeResult] = await Promise.all([
-      getUserRecord(),
-      getBestWorstExpense(),
-    ]);
+const ExpenseStats = () => {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const { record, daysWithRecords } = userRecordResult;
-    const { bestExpense, worstExpense } = rangeResult;
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Fetch both average and range data
+        const [userRecordResult, rangeResult] = await Promise.all([
+          getUserRecord(),
+          getBestWorstExpense(),
+        ]);
+
+        const { record, daysWithRecords } = userRecordResult;
+        const { bestExpense, worstExpense } = rangeResult;
+        
+        setStats({ record, daysWithRecords, bestExpense, worstExpense });
+      } catch (err) {
+        setError('Failed to load expense statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className='bg-white dark:bg-gray-800 text-black dark:text-gray-100 shadow-xl p-4 sm:p-6 rounded-2xl border border-gray-100/50 dark:border-gray-700/50 min-h-[320px]'>
+        <div className='flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6'>
+          <div className='w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg'>
+            <span className='text-white text-sm sm:text-lg'>📊</span>
+          </div>
+          <div>
+            <h3 className='text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100'>
+              Expense Statistics
+            </h3>
+            <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>
+              Loading your spending insights...
+            </p>
+          </div>
+        </div>
+        <div className='flex items-center justify-center py-8'>
+          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500'></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='bg-white dark:bg-gray-800 text-black dark:text-gray-100 shadow-xl p-4 sm:p-6 rounded-2xl border border-gray-100/50 dark:border-gray-700/50 min-h-[320px]'>
+        <div className='flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6'>
+          <div className='w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg'>
+            <span className='text-white text-sm sm:text-lg'>⚠️</span>
+          </div>
+          <div>
+            <h3 className='text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100'>
+              Expense Statistics
+            </h3>
+            <p className='text-xs text-red-500 dark:text-red-400 mt-0.5'>
+              {error}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const { record, daysWithRecords, bestExpense, worstExpense } = stats;
 
     // Calculate average expense
     const validRecord = record || 0;
@@ -97,39 +161,6 @@ const ExpenseStats = async () => {
         </div>
       </div>
     );
-  } catch (error) {
-    console.error('Error fetching expense statistics:', error);
-    return (
-      <div className='bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-gray-100/50 dark:border-gray-700/50 hover:shadow-2xl'>
-        <div className='flex items-center gap-3 mb-6'>
-          <div className='w-12 h-12 bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg'>
-            <span className='text-white text-xl'>📊</span>
-          </div>
-          <div>
-            <h3 className='text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent'>
-              Expense Statistics
-            </h3>
-            <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-              Your spending insights and ranges
-            </p>
-          </div>
-        </div>
-        <div className='bg-red-50/80 dark:bg-red-900/20 backdrop-blur-sm p-6 rounded-xl border-l-4 border-l-red-500'>
-          <div className='flex items-center gap-3 mb-2'>
-            <div className='w-8 h-8 bg-red-100 dark:bg-red-800 rounded-full flex items-center justify-center'>
-              <span className='text-lg'>⚠️</span>
-            </div>
-            <p className='text-red-800 dark:text-red-300 font-semibold'>
-              Unable to load expense statistics
-            </p>
-          </div>
-          <p className='text-red-700 dark:text-red-400 text-sm ml-11'>
-            Please try again later
-          </p>
-        </div>
-      </div>
-    );
-  }
 };
 
 export default ExpenseStats;

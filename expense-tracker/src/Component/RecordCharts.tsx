@@ -1,8 +1,55 @@
-import getRecords from '@/app/actions/GetRecords';
-import BarChart from '@/Component/BarChart'; // Ensure BarChart.tsx or BarChart.jsx exists in the same directory
+'use client';
 
-const RecordChart = async () => {
-  const { records, error } = await getRecords();
+import { useEffect, useState } from 'react';
+import getRecords from '@/app/actions/GetRecords';
+import BarChart from '@/Component/BarChart';
+
+const RecordChart = () => {
+  const [records, setRecords] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecords = async () => {
+      try {
+        const { records, error } = await getRecords();
+        if (error) {
+          setError(error);
+        } else {
+          setRecords(records || []);
+        }
+      } catch (err) {
+        setError('Failed to load records');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecords();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className='bg-white dark:bg-gray-800 text-black dark:text-gray-100 shadow-xl p-4 sm:p-6 rounded-2xl border border-gray-100/50 dark:border-gray-700/50'>
+        <div className='flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6'>
+          <div className='w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg'>
+            <span className='text-white text-sm sm:text-lg'>📊</span>
+          </div>
+          <div>
+            <h3 className='text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100'>
+              Expense Chart
+            </h3>
+            <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>
+              Loading chart data...
+            </p>
+          </div>
+        </div>
+        <div className='flex items-center justify-center py-8'>
+          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500'></div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

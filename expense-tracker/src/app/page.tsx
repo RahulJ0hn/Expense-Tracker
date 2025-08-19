@@ -1,3 +1,5 @@
+'use client';
+
 import AddNewRecord from '@/Component/AddNewRecord';
 import AIInsights from '@/Component/AIInsights';
 import ExpenseStats from '@/Component/ExpenseStats';
@@ -7,11 +9,22 @@ import RecordHistory from '@/Component/RecordHistory';
 import HealthRiskInsights from '@/Component/HealthRiskInsights';
 import IncomeInput from '@/Component/IncomeInput';
 import BalanceCard from '@/Component/BalanceCard';
-import { currentUser } from '@clerk/nextjs/server';
+import { useUser } from '@clerk/nextjs';
 
-export default async function HomePage() {
-  const user = await currentUser();
-  if (!user) {
+export default function HomePage() {
+  const { isSignedIn, isLoaded, user } = useUser();
+  
+  // Show loading while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+  
+  // Show guest page if not signed in
+  if (!isSignedIn) {
     return <Guest />;
   }
   return (
@@ -65,7 +78,7 @@ export default async function HomePage() {
                         Joined
                       </span>
                       <span className='text-sm font-semibold text-gray-800 dark:text-gray-200'>
-                        {new Date(user.createdAt).toLocaleDateString()}
+                        {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently'}
                       </span>
                     </div>
                   </div>
@@ -78,8 +91,8 @@ export default async function HomePage() {
                         Last Active
                       </span>
                       <span className='text-sm font-semibold text-gray-800 dark:text-gray-200'>
-                        {user.lastActiveAt
-                          ? new Date(user.lastActiveAt).toLocaleDateString()
+                        {user?.lastSignInAt
+                          ? new Date(user.lastSignInAt).toLocaleDateString()
                           : 'Today'}
                       </span>
                     </div>

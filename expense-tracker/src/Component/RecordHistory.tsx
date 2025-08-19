@@ -1,9 +1,56 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import getRecords from '@/app/actions/GetRecords';
 import RecordItem from './RecordItem';
 import { Record } from '@/types/Record';
 
-const RecordHistory = async () => {
-  const { records, error } = await getRecords();
+const RecordHistory = () => {
+  const [records, setRecords] = useState<Record[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecords = async () => {
+      try {
+        const { records, error } = await getRecords();
+        if (error) {
+          setError(error);
+        } else {
+          setRecords(records || []);
+        }
+      } catch (err) {
+        setError('Failed to load records');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecords();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className='bg-white dark:bg-gray-800 text-black dark:text-gray-100 shadow-xl p-4 sm:p-6 rounded-2xl'>
+        <div className='flex items-center gap-3 mb-6'>
+          <div className='w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg'>
+            <span className='text-white text-lg'>📝</span>
+          </div>
+          <div>
+            <h3 className='text-xl font-bold text-gray-900 dark:text-gray-100'>
+              Recent Transactions
+            </h3>
+            <p className='text-xs text-gray-500 dark:text-gray-400'>
+              Loading your expense history...
+            </p>
+          </div>
+        </div>
+        <div className='flex items-center justify-center py-8'>
+          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-red-500'></div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
