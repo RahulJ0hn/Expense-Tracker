@@ -29,10 +29,10 @@ const AddRecord = () => {
           const thisMonth = now.getMonth();
           const thisYear = now.getFullYear();
           const spent = records.filter(
-            (r: any) =>
+            (r: { date: string | Date }) =>
               new Date(r.date).getMonth() === thisMonth &&
               new Date(r.date).getFullYear() === thisYear
-          ).reduce((acc: number, r: any) => acc + r.amount, 0);
+          ).reduce((acc: number, r: { amount: number }) => acc + r.amount, 0);
           setMaxAmount(Math.max(1, income - spent));
         } else {
           setMaxAmount(income > 0 ? income : 1000000);

@@ -105,9 +105,9 @@ export async function generateExpenseInsights(
     let parsed = null;
     try {
       parsed = JSON.parse(cleanedResponse);
-    } catch (e) {
+    } catch {
       // Attempt to fix common JSON issues (single quotes, unquoted keys)
-      let fixed = cleanedResponse
+      const fixed = cleanedResponse
         .replace(/([,{\s])([a-zA-Z0-9_]+)\s*:/g, '$1"$2":') // quote property names
         .replace(/'/g, '"'); // replace single quotes with double quotes
       parsed = JSON.parse(fixed);

@@ -43,7 +43,7 @@ const HealthRiskInsights = () => {
       try {
         const aiMsg = await GenerateHealthAdvice(advicePrompt);
         setAIAdvice(aiMsg);
-      } catch (e) {
+      } catch {
         setAIAdvice('');
       }
       setLoading(false);
