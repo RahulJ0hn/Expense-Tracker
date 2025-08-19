@@ -4,7 +4,6 @@ import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import ThemeToggle from '@/Component/ThemeToggle';
 import { useState } from 'react';
-import { useTheme } from '@/app/contexts/ThemeContext';
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
