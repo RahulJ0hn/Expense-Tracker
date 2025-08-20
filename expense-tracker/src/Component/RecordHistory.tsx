@@ -19,8 +19,8 @@ const RecordHistory = () => {
         } else {
           setRecords(records || []);
         }
-      } catch (err) {
-        setError('Failed to load records');
+              } catch {
+          setError('Failed to load records');
       } finally {
         setLoading(false);
       }

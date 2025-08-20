@@ -5,7 +5,13 @@ import getRecords from '@/app/actions/GetRecords';
 import BarChart from '@/Component/BarChart';
 
 const RecordChart = () => {
-  const [records, setRecords] = useState<any[]>([]);
+  const [records, setRecords] = useState<{
+    id: string;
+    text: string;
+    amount: number;
+    category: string;
+    date: string | Date;
+  }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,8 +24,8 @@ const RecordChart = () => {
         } else {
           setRecords(records || []);
         }
-      } catch (err) {
-        setError('Failed to load records');
+              } catch {
+          setError('Failed to load records');
       } finally {
         setLoading(false);
       }

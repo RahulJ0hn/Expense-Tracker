@@ -22,8 +22,8 @@ const ExpenseStats = () => {
         const { bestExpense, worstExpense } = rangeResult;
         
         setStats({ record, daysWithRecords, bestExpense, worstExpense });
-      } catch (err) {
-        setError('Failed to load expense statistics');
+              } catch {
+          setError('Failed to load expense statistics');
       } finally {
         setLoading(false);
       }
