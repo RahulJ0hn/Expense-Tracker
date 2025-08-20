@@ -16,11 +16,13 @@ const AddRecord = () => {
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [isRecurring, setIsRecurring] = useState(false);
   const [maxAmount, setMaxAmount] = useState(1000000);
+  const [hasMonthlyIncome, setHasMonthlyIncome] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('monthlyIncome');
       const income = stored ? parseFloat(stored) : 0;
+      setHasMonthlyIncome(income > 0);
       // Fetch spent for this month
       (async () => {
         const { records } = await getRecords();
@@ -33,9 +35,9 @@ const AddRecord = () => {
               new Date(r.date).getMonth() === thisMonth &&
               new Date(r.date).getFullYear() === thisYear
           ).reduce((acc: number, r: { amount: number }) => acc + r.amount, 0);
-          setMaxAmount(income > 0 ? Math.max(1, income - spent) : 1000000);
+          setMaxAmount(income > 0 ? Math.max(1, income - spent) : 999999999);
         } else {
-          setMaxAmount(income > 0 ? income : 1000000);
+          setMaxAmount(income > 0 ? income : 999999999);
         }
       })();
     }
@@ -266,7 +268,10 @@ const AddRecord = () => {
               <span className='w-1.5 h-1.5 bg-green-500 rounded-full'></span>
               Amount
               <span className='text-xs text-gray-400 dark:text-gray-500 ml-2 font-normal hidden sm:inline'>
-                Enter amount between ₹0 and ₹{maxAmount.toLocaleString('en-IN')}
+                {hasMonthlyIncome 
+                  ? `Enter amount between ₹0 and ₹${maxAmount.toLocaleString('en-IN')}`
+                  : 'Enter any amount (set monthly income to limit spending)'
+                }
               </span>
             </label>
             <div className='relative'>
@@ -286,7 +291,9 @@ const AddRecord = () => {
                 placeholder='0.00'
                 required
               />
-              <span className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400'>Max: ₹{maxAmount.toLocaleString('en-IN')}</span>
+              <span className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400'>
+                {hasMonthlyIncome ? `Max: ₹${maxAmount.toLocaleString('en-IN')}` : 'No limit'}
+              </span>
             </div>
           </div>
         </div>
