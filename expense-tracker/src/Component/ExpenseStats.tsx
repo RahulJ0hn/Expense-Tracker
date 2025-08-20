@@ -5,6 +5,7 @@ import getUserRecord from '@/app/actions/GetUserRecord';
 import getBestWorstExpense from '@/app/actions/GetBestWorstExpense';
 
 const ExpenseStats = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
