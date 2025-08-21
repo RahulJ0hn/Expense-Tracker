@@ -3,12 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import getRecords from '@/app/actions/GetRecords';
 import GenerateHealthAdvice from '@/app/actions/GenerateHealthAdvice';
+import { useExpenseContext } from '@/app/contexts/ExpenseContext';
 
 const HEALTH_RISK_CATEGORIES = ['Alcohol', 'Cigarettes'];
 const HIGH_RISK_THRESHOLD = 1000; // INR per month
 const MODERATE_RISK_THRESHOLD = 500;
 
 const HealthRiskInsights = () => {
+  const { records } = useExpenseContext();
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [aiAdvice, setAIAdvice] = useState('');
@@ -16,7 +18,6 @@ const HealthRiskInsights = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const { records } = await getRecords();
       if (!records) {
         setTotal(0);
         setLoading(false);
@@ -49,7 +50,7 @@ const HealthRiskInsights = () => {
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [records]);
 
   let message = '';
   let icon = '';
@@ -74,7 +75,7 @@ const HealthRiskInsights = () => {
         <div className='w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center'>
           <span className='text-white text-xl'>{icon}</span>
         </div>
-        <div>
+        <div className='flex-1'>
           <h3 className='text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100'>
             Health Risk Insights
           </h3>
@@ -82,6 +83,15 @@ const HealthRiskInsights = () => {
             Alcohol & Cigarettes spending analysis
           </p>
         </div>
+        <button
+          onClick={() => window.location.reload()}
+          className='p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors duration-200'
+          title='Refresh insights'
+        >
+          <svg className='w-4 h-4 text-emerald-600 dark:text-emerald-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' />
+          </svg>
+        </button>
       </div>
       <div className={`relative overflow-hidden rounded-xl p-3 sm:p-4 border-l-4 ${color}`}>
         <p className='text-sm'>{loading ? 'Loading...' : message}</p>

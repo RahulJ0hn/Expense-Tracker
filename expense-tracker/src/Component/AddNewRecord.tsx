@@ -3,8 +3,10 @@ import { useRef, useState, useEffect } from 'react';
 import addExpenseRecord from '@/app/actions/AddExpenseRecord';
 import { suggestCategory } from '@/app/actions/SuggestCategory';
 import getRecords from '@/app/actions/GetRecords';
+import { useExpenseContext } from '@/app/contexts/ExpenseContext';
 
 const AddRecord = () => {
+  const { refreshRecords } = useExpenseContext();
   const formRef = useRef<HTMLFormElement>(null);
   const [amount, setAmount] = useState(50); // Default value for expense amount
   const [alertMessage, setAlertMessage] = useState<string | null>(null); // State for alert message
@@ -64,6 +66,8 @@ const AddRecord = () => {
       setAmount(50); // Reset the amount to the default value
       setCategory(''); // Reset the category
       setDescription(''); // Reset the description
+      // Refresh all components with new data
+      await refreshRecords();
     }
 
     setIsLoading(false); // Hide spinner
