@@ -1,44 +1,43 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import getRecords from '@/app/actions/GetRecords';
+import { useExpenseContext } from '@/app/contexts/ExpenseContext';
 
 const BalanceCard = () => {
+  const { records, loading } = useExpenseContext();
   const [income, setIncome] = useState(0);
-  const [spent, setSpent] = useState(0);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('monthlyIncome');
       setIncome(stored ? parseFloat(stored) : 0);
+      
+      // Listen for income updates
+      const handleIncomeUpdate = (event: CustomEvent) => {
+        setIncome(event.detail);
+      };
+      
+      window.addEventListener('incomeUpdated', handleIncomeUpdate as EventListener);
+      
+      return () => {
+        window.removeEventListener('incomeUpdated', handleIncomeUpdate as EventListener);
+      };
     }
-    const fetchSpent = async () => {
-      setLoading(true);
-      const { records } = await getRecords();
-      if (!records) {
-        setSpent(0);
-        setLoading(false);
-        return;
-      }
-      const now = new Date();
-      const thisMonth = now.getMonth();
-      const thisYear = now.getFullYear();
-      const filtered = records.filter(
-        (r) =>
-          new Date(r.date).getMonth() === thisMonth &&
-          new Date(r.date).getFullYear() === thisYear
-      );
-      const sum = filtered.reduce((acc, r) => acc + r.amount, 0);
-      setSpent(sum);
-      setLoading(false);
-    };
-    fetchSpent();
   }, []);
 
-  const remaining = income - spent;
   const now = new Date();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const today = now.getDate();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const filtered = records?.filter(
+    (r) =>
+      new Date(r.date).getMonth() === thisMonth &&
+      new Date(r.date).getFullYear() === thisYear
+  ) || [];
+  const spent = filtered.reduce((acc: number, r: { amount: number }) => acc + r.amount, 0);
+
+  const remaining = income - spent;
+  const currentDate = new Date();
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const today = currentDate.getDate();
   const daysLeft = daysInMonth - today + 1;
   const dailyLimit = daysLeft > 0 ? remaining / daysLeft : 0;
 

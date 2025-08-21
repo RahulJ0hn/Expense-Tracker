@@ -2,11 +2,10 @@
 import { useRef, useState, useEffect } from 'react';
 import addExpenseRecord from '@/app/actions/AddExpenseRecord';
 import { suggestCategory } from '@/app/actions/SuggestCategory';
-import getRecords from '@/app/actions/GetRecords';
 import { useExpenseContext } from '@/app/contexts/ExpenseContext';
 
 const AddRecord = () => {
-  const { refreshRecords } = useExpenseContext();
+  const { records, refreshRecords } = useExpenseContext();
   const formRef = useRef<HTMLFormElement>(null);
   const [amount, setAmount] = useState(50); // Default value for expense amount
   const [alertMessage, setAlertMessage] = useState<string | null>(null); // State for alert message
@@ -17,34 +16,58 @@ const AddRecord = () => {
   const [isCategorizingAI, setIsCategorizingAI] = useState(false); // State for AI categorization loading
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [isRecurring, setIsRecurring] = useState(false);
-  const [maxAmount, setMaxAmount] = useState(1000000);
   const [hasMonthlyIncome, setHasMonthlyIncome] = useState(false);
+  const [monthlyBalance, setMonthlyBalance] = useState(0);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('monthlyIncome');
       const income = stored ? parseFloat(stored) : 0;
       setHasMonthlyIncome(income > 0);
-      // Fetch spent for this month
-      (async () => {
-        const { records } = await getRecords();
+      
+      // Calculate current monthly balance
+      if (records) {
+        const now = new Date();
+        const thisMonth = now.getMonth();
+        const thisYear = now.getFullYear();
+        const spent = records.filter(
+          (r) =>
+            new Date(r.date).getMonth() === thisMonth &&
+            new Date(r.date).getFullYear() === thisYear
+        ).reduce((acc: number, r) => acc + r.amount, 0);
+        setMonthlyBalance(income - spent);
+      } else {
+        setMonthlyBalance(income);
+      }
+      
+      // Listen for income updates
+      const handleIncomeUpdate = (event: CustomEvent) => {
+        const newIncome = event.detail;
+        setHasMonthlyIncome(newIncome > 0);
+        
+        // Recalculate balance with new income
         if (records) {
           const now = new Date();
           const thisMonth = now.getMonth();
           const thisYear = now.getFullYear();
           const spent = records.filter(
-            (r: { date: string | Date }) =>
+            (r) =>
               new Date(r.date).getMonth() === thisMonth &&
               new Date(r.date).getFullYear() === thisYear
-          ).reduce((acc: number, r: { amount: number }) => acc + r.amount, 0);
-          // If spent exceeds income, don't limit the amount
-          setMaxAmount(income > 0 ? (spent >= income ? 999999999 : income - spent) : 999999999);
+          ).reduce((acc: number, r) => acc + r.amount, 0);
+          setMonthlyBalance(newIncome - spent);
         } else {
-          setMaxAmount(income > 0 ? income : 999999999);
+          setMonthlyBalance(newIncome);
         }
-      })();
+      };
+      
+      window.addEventListener('incomeUpdated', handleIncomeUpdate as EventListener);
+      
+      return () => {
+        window.removeEventListener('incomeUpdated', handleIncomeUpdate as EventListener);
+      };
     }
-  }, []);
+  }, [records]);
 
   const clientAction = async (formData: FormData) => {
     setIsLoading(true); // Show spinner
@@ -274,8 +297,8 @@ const AddRecord = () => {
               Amount
               <span className='text-xs text-gray-400 dark:text-gray-500 ml-2 font-normal hidden sm:inline'>
                 {hasMonthlyIncome 
-                  ? `Enter amount between ₹0 and ₹${maxAmount.toLocaleString('en-IN')}`
-                  : 'Enter any amount (set monthly income to limit spending)'
+                  ? `Monthly balance: ₹${monthlyBalance.toLocaleString('en-IN')}`
+                  : '💡 Set monthly income to track spending limits'
                 }
               </span>
             </label>
@@ -288,7 +311,6 @@ const AddRecord = () => {
                 name='amount'
                 id='amount'
                 min='0'
-                max={maxAmount}
                 step='0.01'
                 value={amount}
                 onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
@@ -297,7 +319,7 @@ const AddRecord = () => {
                 required
               />
               <span className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400'>
-                {hasMonthlyIncome ? `Max: ₹${maxAmount.toLocaleString('en-IN')}` : 'No limit'}
+                {hasMonthlyIncome ? `Balance: ₹${monthlyBalance.toLocaleString('en-IN')}` : 'No limit set'}
               </span>
             </div>
           </div>

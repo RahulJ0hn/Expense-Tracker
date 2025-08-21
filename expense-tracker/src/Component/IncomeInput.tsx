@@ -20,6 +20,8 @@ const IncomeInput = () => {
     if (!isNaN(value) && value >= 0) {
       setIncome(value);
       localStorage.setItem('monthlyIncome', value.toString());
+      // Dispatch a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('incomeUpdated', { detail: value }));
     }
   };
 
