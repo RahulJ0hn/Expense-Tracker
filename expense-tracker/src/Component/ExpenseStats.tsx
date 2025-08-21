@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import getUserRecord from '@/app/actions/GetUserRecord';
 import getBestWorstExpense from '@/app/actions/GetBestWorstExpense';
+import { useExpenseContext } from '@/app/contexts/ExpenseContext';
 
 const ExpenseStats = () => {
+  const { records } = useExpenseContext();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -23,15 +25,16 @@ const ExpenseStats = () => {
         const { bestExpense, worstExpense } = rangeResult;
         
         setStats({ record, daysWithRecords, bestExpense, worstExpense });
-              } catch {
-          setError('Failed to load expense statistics');
+        setError(null);
+      } catch {
+        setError('Failed to load expense statistics');
       } finally {
         setLoading(false);
       }
     };
 
     fetchStats();
-  }, []);
+  }, [records]); // Re-fetch when records change
 
   if (loading) {
     return (

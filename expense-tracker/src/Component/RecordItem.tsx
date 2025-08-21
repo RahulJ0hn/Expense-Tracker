@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Record } from '@/types/Record';
 import deleteRecord from '@/app/actions/deleteRecord';
+import { useExpenseContext } from '@/app/contexts/ExpenseContext';
 
 // Helper function to get category emoji
 const getCategoryEmoji = (category: string) => {
@@ -24,11 +25,13 @@ const getCategoryEmoji = (category: string) => {
 };
 
 const RecordItem = ({ record }: { record: Record }) => {
+  const { refreshRecords } = useExpenseContext();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDeleteRecord = async (recordId: string) => {
     setIsLoading(true); // Show loading spinner
     await deleteRecord(recordId); // Perform delete operation
+    await refreshRecords(); // Refresh the context to update all components
     setIsLoading(false); // Hide loading spinner
   };
 

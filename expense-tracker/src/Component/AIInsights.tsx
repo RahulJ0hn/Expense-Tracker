@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getAIInsights } from '@/app/actions/GetAIInsights';
 import { generateInsightAnswer } from '@/app/actions/generateInsightAnswer';
+import { useExpenseContext } from '@/app/contexts/ExpenseContext';
 
 interface InsightData {
   id: string;
@@ -20,6 +21,7 @@ interface AIAnswer {
 }
 
 const AIInsights = () => {
+  const { records } = useExpenseContext();
   const [insights, setInsights] = useState<InsightData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -101,7 +103,7 @@ const AIInsights = () => {
 
   useEffect(() => {
     loadInsights();
-  }, []);
+  }, [records]); // Re-load insights when records change
 
   const getInsightIcon = (type: string) => {
     switch (type) {
