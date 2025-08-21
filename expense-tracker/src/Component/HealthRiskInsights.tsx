@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import getRecords from '@/app/actions/GetRecords';
 import GenerateHealthAdvice from '@/app/actions/GenerateHealthAdvice';
 import { useExpenseContext } from '@/app/contexts/ExpenseContext';
 

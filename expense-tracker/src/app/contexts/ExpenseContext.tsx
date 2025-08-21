@@ -2,14 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import getRecords from '@/app/actions/GetRecords';
-
-interface Record {
-  id: string;
-  text: string;
-  amount: number;
-  category: string;
-  date: string | Date;
-}
+import { Record } from '@/types/Record';
 
 interface ExpenseContextType {
   records: Record[];
