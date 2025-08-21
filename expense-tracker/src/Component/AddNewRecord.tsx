@@ -37,7 +37,8 @@ const AddRecord = () => {
               new Date(r.date).getMonth() === thisMonth &&
               new Date(r.date).getFullYear() === thisYear
           ).reduce((acc: number, r: { amount: number }) => acc + r.amount, 0);
-          setMaxAmount(income > 0 ? Math.max(1, income - spent) : 999999999);
+          // If spent exceeds income, don't limit the amount
+          setMaxAmount(income > 0 ? (spent >= income ? 999999999 : income - spent) : 999999999);
         } else {
           setMaxAmount(income > 0 ? income : 999999999);
         }
@@ -286,7 +287,7 @@ const AddRecord = () => {
                 type='number'
                 name='amount'
                 id='amount'
-                min='1'
+                min='0'
                 max={maxAmount}
                 step='0.01'
                 value={amount}
