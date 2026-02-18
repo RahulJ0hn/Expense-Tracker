@@ -1,5 +1,5 @@
 'use server';
-import { auth } from '@clerk/nextjs/server';
+import { checkUser } from '@/lib/checkUser';
 import db from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
@@ -52,13 +52,14 @@ async function addExpenseRecord(formData: FormData): Promise<RecordResult> {
     return { error: 'Invalid date format' };
   }
 
-  // Get logged in user
-  const { userId } = await auth();
+  // Get logged in user (creates DB record if it doesn't exist)
+  const user = await checkUser();
 
-  // Check for user
-  if (!userId) {
+  if (!user) {
     return { error: 'User not found' };
   }
+
+  const userId = user.clerkUserId;
 
   try {
     // Create a new record (allow multiple expenses per day)

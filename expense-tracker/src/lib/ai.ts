@@ -1,4 +1,7 @@
-import OpenAI from 'openai';
+import {
+  BedrockRuntimeClient,
+  InvokeModelCommand,
+} from '@aws-sdk/client-bedrock-runtime';
 
 interface RawInsight {
   type?: string;
@@ -8,14 +11,46 @@ interface RawInsight {
   confidence?: number;
 }
 
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-  defaultHeaders: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    'X-Title': 'ExpenseTracker AI',
+const bedrock = new BedrockRuntimeClient({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY || '',
+    secretAccessKey: process.env.AWS_SECRET_KEY || '',
   },
 });
+
+const MODEL_ID = process.env.MODEL_ID || 'us.anthropic.claude-sonnet-4-20250514-v1:0';
+
+async function invokeModel(
+  system: string,
+  userMessage: string,
+  maxTokens: number,
+  temperature: number
+): Promise<string> {
+  const body = JSON.stringify({
+    anthropic_version: 'bedrock-2023-05-31',
+    max_tokens: maxTokens,
+    temperature,
+    system,
+    messages: [
+      {
+        role: 'user',
+        content: userMessage,
+      },
+    ],
+  });
+
+  const command = new InvokeModelCommand({
+    modelId: MODEL_ID,
+    contentType: 'application/json',
+    accept: 'application/json',
+    body: new TextEncoder().encode(body),
+  });
+
+  const response = await bedrock.send(command);
+  const result = JSON.parse(new TextDecoder().decode(response.body));
+  return result.content[0].text;
+}
 
 export interface ExpenseRecord {
   id: string;
@@ -38,7 +73,6 @@ export async function generateExpenseInsights(
   expenses: ExpenseRecord[]
 ): Promise<AIInsight[]> {
   try {
-    // Prepare expense data for AI analysis
     const expensesSummary = expenses.map((expense) => ({
       amount: expense.amount,
       category: expense.category,
@@ -46,7 +80,7 @@ export async function generateExpenseInsights(
       date: expense.date,
     }));
 
-    const prompt = `Analyze the following expense data and provide 3-4 actionable financial insights. 
+    const prompt = `Analyze the following expense data and provide 3-4 actionable financial insights.
     Return a JSON array of insights with this structure:
     {
       "type": "warning|info|success|tip",
@@ -67,27 +101,12 @@ export async function generateExpenseInsights(
 
     Return only a valid JSON array. Do not include any text before or after the JSON. All property names and string values must use double quotes. No comments, no trailing commas, no markdown, no explanations.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'openai/gpt-oss-20b:free',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a financial advisor AI that analyzes spending patterns and provides actionable insights. Always respond with valid JSON only.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
-
-    const response = completion.choices[0].message.content;
-    if (!response) {
-      throw new Error('No response from AI');
-    }
+    const response = await invokeModel(
+      'You are a financial advisor AI that analyzes spending patterns and provides actionable insights. Always respond with valid JSON only.',
+      prompt,
+      1000,
+      0.7
+    );
 
     // Clean the response by removing markdown code blocks if present
     let cleanedResponse = response.trim();
@@ -106,15 +125,13 @@ export async function generateExpenseInsights(
     try {
       parsed = JSON.parse(cleanedResponse);
     } catch {
-      // Attempt to fix common JSON issues (single quotes, unquoted keys)
       const fixed = cleanedResponse
-        .replace(/([,{\s])([a-zA-Z0-9_]+)\s*:/g, '$1"$2":') // quote property names
-        .replace(/'/g, '"'); // replace single quotes with double quotes
+        .replace(/([,{\s])([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
+        .replace(/'/g, '"');
       parsed = JSON.parse(fixed);
     }
     const insights = parsed;
 
-    // Add IDs and ensure proper format
     const formattedInsights = insights.map(
       (insight: RawInsight, index: number) => ({
         id: `ai-${Date.now()}-${index}`,
@@ -130,7 +147,6 @@ export async function generateExpenseInsights(
   } catch (error) {
     console.error('❌ Error generating AI insights:', error);
 
-    // Fallback to mock insights if AI fails
     return [
       {
         id: 'fallback-1',
@@ -147,24 +163,12 @@ export async function generateExpenseInsights(
 
 export async function categorizeExpense(description: string): Promise<string> {
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'openai/gpt-oss-20b:free',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an expense categorization AI. Categorize expenses into one of these categories: Food, Transportation, Entertainment, Shopping, Bills, Healthcare, Alcohol, Cigarettes, Other. Respond with only the category name.',
-        },
-        {
-          role: 'user',
-          content: `Categorize this expense: "${description}"`,
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 20,
-    });
-
-    const category = completion.choices[0].message.content?.trim();
+    const category = await invokeModel(
+      'You are an expense categorization AI. Categorize expenses into one of these categories: Food, Transportation, Entertainment, Shopping, Bills, Healthcare, Alcohol, Cigarettes, Other. Respond with only the category name.',
+      `Categorize this expense: "${description}"`,
+      20,
+      0.1
+    );
 
     const validCategories = [
       'Food',
@@ -178,10 +182,8 @@ export async function categorizeExpense(description: string): Promise<string> {
       'Other',
     ];
 
-    const finalCategory = validCategories.includes(category || '')
-      ? category!
-      : 'Other';
-    return finalCategory;
+    const trimmed = category.trim();
+    return validCategories.includes(trimmed) ? trimmed : 'Other';
   } catch (error) {
     console.error('❌ Error categorizing expense:', error);
     return 'Other';
@@ -210,30 +212,15 @@ export async function generateAIAnswer(
     2. Uses concrete data from the expenses when possible
     3. Offers actionable advice
     4. Keeps the response concise but informative (2-3 sentences)
-    
+
     Return only the answer text, no additional formatting.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'openai/gpt-oss-20b:free',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a helpful financial advisor AI that provides specific, actionable answers based on expense data. Be concise but thorough.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 200,
-    });
-
-    const response = completion.choices[0].message.content;
-    if (!response) {
-      throw new Error('No response from AI');
-    }
+    const response = await invokeModel(
+      'You are a helpful financial advisor AI that provides specific, actionable answers based on expense data. Be concise but thorough.',
+      prompt,
+      200,
+      0.7
+    );
 
     return response.trim();
   } catch (error) {
@@ -244,24 +231,13 @@ export async function generateAIAnswer(
 
 export async function generateAIHealthAdvice(prompt: string): Promise<string> {
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'openai/gpt-oss-20b:free',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a health and lifestyle advisor for bachelors in India. Respond with a short, practical, and motivating suggestion or congratulation based on the user\'s prompt. Do not include any markdown or code blocks. Respond in 2-3 sentences.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.6,
-      max_tokens: 120,
-    });
-    const response = completion.choices[0].message.content;
-    return response?.trim() || '';
+    const response = await invokeModel(
+      'You are a health and lifestyle advisor for bachelors in India. Respond with a short, practical, and motivating suggestion or congratulation based on the user\'s prompt. Do not include any markdown or code blocks. Respond in 2-3 sentences.',
+      prompt,
+      120,
+      0.6
+    );
+    return response.trim();
   } catch (error) {
     console.error('❌ Error generating AI health advice:', error);
     return '';

@@ -9,7 +9,7 @@ const HIGH_RISK_THRESHOLD = 1000; // INR per month
 const MODERATE_RISK_THRESHOLD = 500;
 
 const HealthRiskInsights = () => {
-  const { records } = useExpenseContext();
+  const { records, refreshRecords } = useExpenseContext();
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [aiAdvice, setAIAdvice] = useState('');
@@ -83,7 +83,7 @@ const HealthRiskInsights = () => {
           </p>
         </div>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => refreshRecords()}
           className='p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors duration-200'
           title='Refresh insights'
         >
