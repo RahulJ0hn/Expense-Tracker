@@ -14,8 +14,8 @@ interface RawInsight {
 const bedrock = new BedrockRuntimeClient({
   region: process.env.AWS_REGION || 'us-east-1',
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY || '',
-    secretAccessKey: process.env.AWS_SECRET_KEY || '',
+    accessKeyId: process.env.BEDROCK_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.BEDROCK_SECRET_KEY || '',
   },
 });
 
